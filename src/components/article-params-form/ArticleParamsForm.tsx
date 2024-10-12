@@ -3,7 +3,7 @@ import { Button } from 'src/ui/button';
 
 import clsx from 'clsx';
 import styles from './ArticleParamsForm.module.scss';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Select } from '../../ui/select/Select';
 import {
 	ArticleStateType,
@@ -22,13 +22,14 @@ import { Text } from 'src/ui/text/Text';
 type ArticleStateKey = keyof ArticleStateType;
 
 type articleProps = {
-	setAppState: (value: ArticleStateType) => void;
+	setArticleState: (value: ArticleStateType) => void;
 };
 
 export const ArticleParamsForm = (props: articleProps) => {
-	const [isOpened, setIsOpened] = useState<boolean>(false);
+	const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 	const [formState, setFormState] =
 		useState<ArticleStateType>(defaultArticleState);
+	const formContainerRef = useRef<HTMLElement>(null);
 
 	function handleChange(key: ArticleStateKey) {
 		return (selected: OptionType) => {
@@ -41,26 +42,42 @@ export const ArticleParamsForm = (props: articleProps) => {
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		props.setAppState(formState);
+		props.setArticleState(formState);
 	};
 
 	const handleReset = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		setFormState(defaultArticleState);
-		props.setAppState(defaultArticleState);
+		props.setArticleState(defaultArticleState);
 	};
+
+	const handleClickOutside = (event: MouseEvent) => {
+		if (
+			formContainerRef.current &&
+			!formContainerRef.current.contains(event.target as HTMLElement)
+		) {
+			setIsMenuOpen(false);
+		}
+	};
+
+	useEffect(() => {
+		if (isMenuOpen) {
+			document.addEventListener('mousedown', handleClickOutside);
+		}
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [isMenuOpen]);
 
 	return (
 		<>
 			<ArrowButton
-				isOpen={isOpened}
-				onClick={() => setIsOpened((currentIsOpened) => !currentIsOpened)}
+				isOpen={isMenuOpen}
+				onClick={() => setIsMenuOpen((currentisMenuOpen) => !currentisMenuOpen)}
 			/>
-			<div
-				onClick={() => setIsOpened(false)}
-				className={clsx(styles.overlay, isOpened && styles.overlay_open)}></div>
 			<aside
-				className={clsx(styles.container, isOpened && styles.container_open)}>
+				ref={formContainerRef}
+				className={clsx(styles.container, isMenuOpen && styles.container_open)}>
 				<form
 					onSubmit={handleSubmit}
 					onReset={handleReset}
